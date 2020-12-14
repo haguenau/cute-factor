@@ -1,0 +1,100 @@
+#! /usr/bin/perl -wCSD
+## $Id$
+
+use strict;
+use Getopt::Long;
+use Pod::Usage;
+use utf8;
+
+my ($help) = (0);
+
+GetOptions (
+    'h|help' => \$help,
+    ) or pod2usage(2);
+pod2usage(1) if $help;
+
+
+=head1 NAME
+
+pretty-factor
+
+=head1 SYNOPSIS
+
+pretty-factor INTEGER [options]
+ Options:
+   -h, --help           Print this help message
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-help>
+
+Print this help message.
+
+=back
+
+=head1 DESCRIPTION
+
+B<pretty-factor> takes an integer, and prints its factorization into
+primes in a semi-pretty way; e.g., for the number 1089:
+
+  3² × 11²
+
+uses the B<factor> commands (from GNU coreutils)
+
+=cut
+
+sub factor($) {
+    my $n = shift;
+    my $cmd = 'factor';
+    my $line = `$cmd $n`;
+    die "Could not execute command \`$cmd'. Install it?\n" if $? < 0;
+    die "Running command \`$cmd' failed.\n" if $? > 0;
+
+    my @factors;
+    if ($line =~ /^\d+:\s*(.*)$/) {
+        @factors = split /\s+/, $1;
+    } else {
+        die "Broken output from \`factor': $line";
+    }
+
+    my %factors = ();
+    for my $f (@factors) {
+        ++$factors{$f};
+    }
+
+    return \%factors;
+}
+
+sub pretty_power($$) {
+    my ($n, $p) = @_;
+
+    return $n if $p == 1;
+    my $super_digits = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+    my $super_p =
+        join '',
+        map { substr $super_digits, ord($_) - ord '0', 1 }
+        split //, $p;
+    return sprintf '%d%s', $n, $super_p;
+}
+
+sub pretty_factors($) {
+    my $factors = shift;
+
+    my @members = ();
+    for my $n (sort { $a <=> $b } keys %$factors) {
+        push @members, pretty_power $n, $factors->{$n};
+    }
+
+    return join ' × ', @members;
+}
+
+sub main() {
+    my $n = $ARGV[0];
+    die "Args: INTEGER.\n" unless $n =~ '^\d+$';
+    my $factors = factor $n;
+    print pretty_factors $factors, "\n"
+}
+
+main;
