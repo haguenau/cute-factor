@@ -7,8 +7,10 @@ use Pod::Usage;
 use utf8;
 
 my ($help) = (0);
-
+my ($fmt_latex, $fmt_unicode) = (0, 1);
 GetOptions (
+    'latex!' => \$fmt_latex,
+    'utf8!' => \$fmt_unicode,
     'h|help' => \$help,
     ) or pod2usage(2);
 pod2usage(1) if $help;
@@ -21,28 +23,28 @@ pretty-factor
 
 =head1 SYNOPSIS
 
-pretty-factor INTEGER [options]
+pretty-factor [options] INTEGER
+
  Options:
+
+   --latex              Print exponents in LaTeX format
+   --utf8               Print exponents as plaintext (default)
+
    -h, --help           Print this help message
-
-=head1 OPTIONS
-
-=over 8
-
-=item B<-help>
-
-Print this help message.
-
-=back
 
 =head1 DESCRIPTION
 
 B<pretty-factor> takes an integer, and prints its factorization into
-primes in a semi-pretty way; e.g., for the number 1089:
+primes in a semi-pretty way; e.g., for C<pretty-factor 1089>:
 
   3² × 11²
 
-uses the B<factor> commands (from GNU coreutils)
+Or, with C<pretty-factor --latex 1089>:
+
+  3^{2} \times 11^{2}
+
+This uses the B<factor> command (from GNU coreutils) to actually
+factor.
 
 =cut
 
@@ -70,8 +72,10 @@ sub factor($) {
 
 sub pretty_power($$) {
     my ($n, $p) = @_;
-
     return $n if $p == 1;
+
+    return sprintf '%d^{%d}', $n, $p if $fmt_latex;
+
     my $super_digits = '⁰¹²³⁴⁵⁶⁷⁸⁹';
     my $super_p =
         join '',
@@ -88,7 +92,8 @@ sub pretty_factors($) {
         push @members, pretty_power $n, $factors->{$n};
     }
 
-    return join ' × ', @members;
+    my $joiner = $fmt_latex ? ' \times ' : ' × ';
+    return join $joiner, @members;
 }
 
 sub main() {
